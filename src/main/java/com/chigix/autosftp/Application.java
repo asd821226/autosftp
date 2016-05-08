@@ -20,6 +20,8 @@ import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.ConnectException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -172,14 +174,23 @@ public class Application {
                         return;
                     }
                 }
+                InputStream fi = null;
                 try {
-                    sftpChannel.put(new FileInputStream(file), destPath, 644);
+                    fi = new FileInputStream(file);
+                    sftpChannel.put(fi, destPath, 644);
                 } catch (FileNotFoundException ex) {
                     System.out.println("File: " + file.getAbsolutePath() + " not exists.");
                     return;
                 } catch (SftpException ex) {
                     Logger.getLogger(Application.class.getName()).log(Level.SEVERE, null, ex);
                     return;
+                } finally {
+                    if (fi != null) {
+                        try {
+                            fi.close();
+                        } catch (IOException ex) {
+                        }
+                    }
                 }
                 System.out.println("File Uploaded: " + destPath);
             }
@@ -198,7 +209,10 @@ public class Application {
                 try {
                     sftpChannel.rm(destPath);
                 } catch (SftpException ex) {
-                    Logger.getLogger(Application.class.getName()).log(Level.SEVERE, null, ex);
+                    if (ex.id == SSH_FX_NO_SUCH_FILE) {
+                    } else {
+                        Logger.getLogger(Application.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
                 System.out.println("Remote Deleted: " + relativePath);
             }
